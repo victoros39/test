@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎫 Волонтёр | Танцующие тени</title>
+  <link rel="stylesheet" href="/static/volunteer.css">
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="/static/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="shortcut icon" href="/static/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Shadows" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+</head>
+<body>
+  <div id="login-screen" class="screen active">
+    <div class="login-box">
+      <h2>🔑 Вход волонтёра</h2>
+      <p style="color:var(--text-muted); margin-bottom:15px; font-size:0.9rem;">Перейдите по ссылке из админ-панели или вставьте токен</p>
+      <input type="text" id="vol-token" placeholder="Ваш уникальный токен">
+      <button class="btn primary" onclick="loginVol()" style="width:100%; margin-top:10px;">Войти</button>
+      <div id="login-error" class="error-msg"></div>
+    </div>
+  </div>
+
+  <div id="app-screen" class="screen">
+    <header>
+      <div class="header-left">
+        <h1 id="vol-name">Волонтёр</h1>
+        <span id="sync-status" class="badge offline">🔴 Оффлайн</span>
+      </div>
+      <div class="header-right">
+        <select id="show-select" onchange="currentShowId=this.value; loadShowData();"></select>
+        <button class="btn secondary" onclick="volLogout()" style="padding:6px 12px; font-size:0.8rem; margin-left:8px;">🚪 Выйти</button>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="search-wrapper">
+        <input type="text" id="search-input" placeholder="Поиск по имени...">
+        <button class="clear-search" onclick="clearSearch()">✕</button>
+        <div id="autocomplete-box"></div>
+      </div>
+      <button id="btn-scan" class="scan-btn" onclick="openScanner()" title="Сканировать QR">📷</button>
+      <button id="btn-group-mode" class="group-btn" onclick="toggleGroupMode()" title="Групповая посадка">👥</button>
+    </div>
+
+    <div class="hall-wrapper">
+      <div class="stage">СЦЕНА</div>
+      <div id="vol-grid"></div>
+    </div>
+
+    <div class="legend">
+      <span class="dot free"></span> Свободно
+      <span class="dot booked"></span> Забронировано
+      <span class="dot verified"></span> В зале
+      <span class="dot cancelled"></span> Отменено
+      <span class="dot group-selected"></span> Выбрано
+    </div>
+  </div>
+
+  <!-- Групповая панель -->
+  <div id="group-panel" class="group-panel hidden">
+    <div class="panel-header"><strong>👥 Выбрано: <span id="group-count">0</span> мест</strong><button class="close-panel" onclick="toggleGroupMode()">✕</button></div>
+    <div class="panel-body">
+      <input type="text" id="group-name" placeholder="Имя группы">
+      <input type="text" id="group-contact" placeholder="Телефон/Email">
+      <button class="btn success" onclick="submitGroupBooking()">✅ Посадить</button>
+    </div>
+  </div>
+
+  <!-- Модалка сканера -->
+  <div id="scanner-modal" class="modal">
+    <div class="modal-content" style="max-width:300px; text-align:center;">
+      <button class="close" onclick="closeScanner()">×</button>
+      <h3 style="margin:0 0 10px;">📷 Наведите камеру на QR</h3>
+      <div id="reader"></div>
+      <small style="color:var(--text-muted)">Распознавание автоматически</small>
+    </div>
+  </div>
+
+  <!-- Модалка результата/посадки -->
+  <div id="result-modal" class="modal">
+    <div class="modal-content">
+      <button class="close" onclick="closeResult()">×</button>
+      <h3 id="res-title">Проверка билета</h3>
+      <div id="res-status" class="status-badge status-info">Загрузка...</div>
+      <div class="form-group"><label>Имя зрителя</label><input type="text" id="res-name"></div>
+      <div class="form-group"><label>Контакт</label><input type="text" id="res-contact"></div>
+      <div class="form-group seat-picker">
+        <label>🪑 Пересадить:</label>
+        <div class="row-cols"><input type="number" id="new-row" placeholder="Ряд"><input type="number" id="new-col" placeholder="Место"></div>
+      </div>
+      <div class="actions">
+        <button class="btn danger" id="btn-danger">Отмена</button>
+        <button class="btn success" id="btn-success">✅ Посадить</button>
+        <button class="btn primary" id="btn-primary">Отметить вход</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="/static/volunteer.js"></script>
+  <script>
+    window.volLogout = () => { sessionStorage.removeItem('vol_token'); window.location.href = '/volunteer'; };
+  </script>
+  <!-- 🔒 Модуль соответствия 152-ФЗ (cookies + политика) -->
+<script src="/static/compliance.js"></script>
+</body>
+</html>

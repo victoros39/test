@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛡️ Админ панель | Танцующие тени</title>
+  <link rel="stylesheet" href="/static/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="/static/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Shadows" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+</head>
+<body>
+  <div id="login-screen">
+    <div class="login-box">
+      <h2>🔐 Вход в админ-панель</h2>
+      <input type="password" id="admin-pass" placeholder="Пароль">
+      <button class="btn primary" onclick="login()">Войти</button>
+      <div id="login-error" class="error-msg"></div>
+    </div>
+  </div>
+
+  <div id="admin-app" style="display:none;">
+    <header class="admin-header">
+      <div class="logo">🛡️ Админ-панель</div>
+      <button class="btn secondary" onclick="logout()">Выйти</button>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('shows')">📅 Спектакли</button>
+      <button class="tab-btn" onclick="switchTab('volunteers')">🤝 Волонтёры</button>
+    </div>
+
+    <div id="shows-panel" class="tab-content active">
+      <div class="shows-container">
+        <div class="shows-list-panel">
+          <h3>🎭 Спектакли</h3>
+          <button class="btn primary" onclick="window.openCreateShowModal()">➕ Добавить</button>
+          <div id="shows-list"></div>
+        </div>
+        <div class="bookings-panel">
+          <div id="bookings-section" style="display:none;">
+            <div class="stats-row">
+              <div class="stat-card"><span id="stat-free">0</span><small>🟢 Свободно</small></div>
+              <div class="stat-card"><span id="stat-reserved">0</span><small>🟡 Забронировано</small></div>
+              <div class="stat-card"><span id="stat-verified">0</span><small>🔵 В зале</small></div>
+              <div class="stat-card"><span id="stat-total">0</span><small>📊 Всего</small></div>
+            </div>
+            <div style="background:#f8fafc; padding:15px; border-radius:10px; margin-bottom:20px; text-align:center;">
+              <canvas id="occupancyChart" style="max-height:200px;"></canvas>
+            </div>
+            <div class="bookings-controls">
+              <input type="text" id="search-input" placeholder="🔍 Поиск..." style="min-width:150px;">
+              <select id="status-filter">
+                <option value="all">Все статусы</option>
+                <option value="reserved">Резерв</option>
+                <option value="verified">В зале</option>
+                <option value="cancelled">Отменено</option>
+              </select>
+              <button class="btn secondary" onclick="window.openLayoutModal()">👁️ Схема</button>
+              <button class="btn primary" id="btn-booking-toggle" onclick="window.toggleBookingPause()">⏸️ Остановить бронь</button>
+              <button class="btn secondary" onclick="window.exportCSV()">📥 Экспорт CSV</button>
+              <button class="btn secondary" id="btn-toggle-status" onclick="window.toggleShowStatus()">Архивировать</button>
+            </div>
+            <div style="overflow:auto; max-height:500px; min-height:300px; background:#fff; border-radius:8px; border:1px solid #e2e8f0;">
+              <table>
+                <thead><tr><th>Ряд</th><th>Место</th><th>Имя</th><th>Контакт</th><th>Статус</th><th>Дата</th><th>Действия</th></tr></thead>
+                <tbody id="bookings-body"></tbody>
+              </table>
+              <div id="empty-state">Нет бронирований</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="volunteers-panel" class="tab-content">
+      <div class="vols-container">
+        <div class="vols-list-panel">
+          <h3>🤝 Волонтёры</h3>
+          <button class="btn primary" onclick="window.openVolunteerModal()" title="Добавить волонтёра">➕ Добавить</button>
+          <div id="volunteers-list"></div>
+        </div>
+        <div class="vol-details-panel">
+          <h3 id="vol-detail-title">📊 Статистика</h3>
+          <div id="vol-stats-grid" class="vol-stats">
+              <div class="vol-stats">
+                <div class="vol-stat-card"><span id="v-active">0</span><small>Активных</small></div>
+                <div class="vol-stat-card"><span id="v-scans">0</span><small>Проверок</small></div>
+                <div class="vol-stat-card"><span id="v-hours">0ч</span><small>Часов работы</small></div>
+                <div class="vol-stat-card"><span>—</span><small>Выберите волонтёра</small></div>
+            </div>
+          </div>
+          <canvas id="volDetailChart" style="max-height:240px; margin-top:16px;"></canvas>
+          <div id="vol-info-text" style="margin-top:16px; color:var(--text-muted); font-size:0.9rem; line-height:1.5;">
+            Нажмите на имя волонтёра слева, чтобы увидеть подробную аналитику.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="create-show-modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="window.closeCreateShowModal()">&times;</button>
+      <h2 id="modal-title">🎭 Новый спектакль</h2>
+      <div class="form-group"><label>Название</label><input id="new-title"></div>
+      <div class="form-group"><label>Описание</label><textarea id="new-desc"></textarea></div>
+      <div class="form-row"><div class="half form-group"><label>Дата</label><input type="date" id="new-date"></div><div class="half form-group"><label>Время</label><input type="time" id="new-time"></div></div>
+      <div class="form-group"><label>📍 Адрес проведения</label><input type="text" id="new-venue" placeholder="ул. Маршала Конева, 10"></div>
+      <div class="form-row"><div class="half form-group"><label>Рядов</label><input type="number" id="new-rows" value="10"></div><div class="half form-group"><label>Мест</label><input type="number" id="new-cols" value="10"></div></div>
+      <div class="form-group"><label>Проходы (колонки через запятую)</label><input id="new-aisle" value="0"></div>
+      <div class="form-group"><label>Постер</label><input type="file" id="show-poster" accept="image/*"><img id="poster-preview" style="max-width:100%;max-height:150px;margin-top:10px;display:none;"></div>
+      <div class="modal-actions"><button class="btn secondary" onclick="window.closeCreateShowModal()">Отмена</button><button class="btn primary" onclick="window.submitCreateShow()">Сохранить</button></div>
+    </div>
+  </div>
+
+  <div id="create-vol-modal" class="modal">
+  <div class="modal-content" style="max-width: 550px;">
+    <button class="modal-close" onclick="window.closeVolunteerModal()">×</button>
+    <h2 id="vol-modal-title" style="margin-bottom:16px; color:var(--primary);">🤝 Настройки волонтёра</h2>
+    <div class="form-group">
+      <label>Имя</label>
+      <input type="text" id="vol-name" placeholder="Иван Иванов">
+    </div>
+    <div class="form-group" style="margin-top:15px; border-top:1px solid #e2e8f0; padding-top:15px;">
+      <label style="font-weight:700; color:var(--primary); display:block; margin-bottom:8px;">🎭 Доступные спектакли:</label>
+      <div id="vol-shows-list" class="vol-assign-list" style="max-height:180px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:8px; padding:10px; background:#f8fafc;">
+        <small style="color:#64748b;">Загрузка...</small>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="window.closeVolunteerModal()">Отмена</button>
+      <button class="btn secondary" onclick="window.saveVolAssignments()" id="btn-save-assign" style="display:none;">💾 Сохранить привязки</button>
+      <button class="btn primary" onclick="window.submitCreateVolunteer()" id="btn-create-vol">✅ Создать</button>
+    </div>
+  </div>
+</div>
+
+<div id="layout-modal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="window.closeLayoutModal()">×</button>
+    <h2 id="layout-title">Схема зала</h2>
+    <div class="stage">СЦЕНА</div>
+    <div class="table-controls" style="display:flex; gap:12px; align-items:center; justify-content:center; margin:12px 0 16px; padding:10px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+      <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem; cursor:pointer; font-weight:600;">
+        <input type="checkbox" id="table-mode-toggle" style="accent-color:var(--primary); transform:scale(1.2);"> 🪑 Режим стола
+      </label>
+      <input type="color" id="table-color-picker" value="#e0e7ff" style="width:36px; height:28px; border:1px solid #cbd5e1; cursor:pointer; border-radius:6px; padding:2px;">
+      <small style="color:var(--text-muted); font-size:0.8rem;">Клик по ячейке = стол на 2 места</small>
+    </div>
+    <div id="admin-seat-grid"></div>
+    <div class="legend">
+      <span><span class="dot free"></span>Свободно</span>
+      <span><span class="dot booked"></span>Забронировано</span>
+      <span><span class="dot verified"></span>В зале</span>
+      <span><span class="dot table"></span>Стол</span>
+    </div>
+    <div class="modal-actions" style="justify-content:center; margin-top:16px;">
+      <button class="btn secondary" onclick="window.closeLayoutModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+  <script src="/static/admin.js"></script>
+  <!-- 🔒 Модуль соответствия 152-ФЗ (cookies + политика) -->
+<script src="/static/compliance.js"></script>
+</body>
+</html>

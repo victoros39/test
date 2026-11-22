@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Танцевальный театр "Танцующие тени" | Бронирование билетов</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="/static/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="shortcut icon" href="/static/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Shadows" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="logo">🎭 Танцующие тени</a>
+      <nav><a href="/" class="active">🎪 Афиши спектаклей</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="shows-section" class="section active">
+      <h1>🎪 Афиши спектаклей</h1>
+      <div id="shows-list" class="shows-grid"><p class="loading">⏳ Загрузка афиши...</p></div>
+    </section>
+
+    <section id="seats-section" class="section">
+  <button class="btn-back" onclick="window.showShowsList()">← Назад к выбору спектакля</button>
+  
+  <!-- Единая карточка со всей информацией -->
+  <div class="show-info-card">
+    <div class="card-header">
+      <h2 id="show-title"></h2>
+      <div class="show-meta" id="show-date">📅 Дата | 🕒 Время | 📍 Место </span></div>
+    </div>
+    <div class="card-body">
+      <img id="show-poster" class="show-poster" src="" alt="Постер" onerror="this.src=window.POSTER_PLACEHOLDER">
+      <div id="show-full-desc"></div>
+    </div>
+  </div>
+
+  <!-- Схема зала (остается без изменений) -->
+  <div class="seats-wrapper">
+    <div class="hall-container">
+      <div class="stage">СЦЕНА</div>
+      <div id="seat-grid" class="seat-grid"></div>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot available"></span>Свободно</div>
+        <div class="legend-item"><span class="legend-dot booked"></span>Забронировано</div>
+        <div class="legend-item"><span class="legend-dot verified"></span>Зритель в зале</div>
+      </div>
+    </div>
+  </div>
+  </section>
+  </main>
+
+  <div id="booking-modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="window.closeBookingModal()">&times;</button>
+      <h2 id="modal-title">Бронирование места</h2>
+      <div id="modal-info" class="modal-info"></div>
+      <div class="form-group"><label>Ваше имя *</label><input type="text" id="seat-name" required></div>
+      <div class="form-group"><label>Ваш email</label><input type="text" id="seat-contact"></div>
+      <div class="form-group checkbox">
+        <label style="font-size:0.85rem; line-height:1.4;">
+          <input type="checkbox" id="seat-consent" required style="margin-right:6px;">
+          Я даю согласие на обработку персональных данных в соответствии с 
+          <a href="/static/privacy.html" target="_blank" style="color:var(--primary);">Политикой конфиденциальности</a>
+        </label>
+      </div>
+      <div class="captcha-box">
+        <label>Проверка: вы человек? *</label>
+        <div class="captcha-content">
+          <span id="captcha-question" class="captcha-text">2 + 2 = ?</span>
+          <input type="number" id="captcha-answer" placeholder="Ответ" autocomplete="off">
+          <button class="btn-refresh-captcha" onclick="window.generateCaptcha()" title="Обновить">🔄</button>
+        </div>
+        <div id="captcha-error" class="captcha-error-msg">❌ Неверный ответ. Попробуйте снова.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="window.closeBookingModal()">Отмена</button>
+        <button class="btn primary" id="btn-book" onclick="window.submitBooking()">Забронировать</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="success-modal" class="modal">
+  <div class="modal-content" style="text-align: center; max-width: 420px;">
+    <button class="modal-close" onclick="window.closeSuccessModal()">×</button>
+    <h2 style="color: var(--primary); margin: 0 0 8px; font-size: 1.5rem;">✅ Бронь подтверждена!</h2>
+    <p id="success-info" class="modal-info" style="color: var(--text-muted); margin: 0 0 16px; font-size: 0.9rem;">Ваше место успешно зарезервировано.</p>
+
+    <!-- 📱 QR-код -->
+    <div id="qr-code" style="background: #ffffff; padding: 16px; border-radius: 12px; display: inline-block; box-shadow: var(--shadow); margin-bottom: 24px;">
+      <!-- QR вставляется через JS -->
+    </div>
+
+    <!-- 📄 Кнопка скачивания -->
+    <button class="btn primary" onclick="window.downloadCurrentPdf()" style="width: 100%; margin-bottom: 20px; padding: 12px;">
+      📄 Скачать билет (PDF)
+    </button>
+
+    <!-- 🚫 Зона отмены (пунктир + пояснение) -->
+    <div style="border: 2px dashed #ef4444; border-radius: 12px; padding: 16px; background: #fef2f2; text-align: left;">
+      <h3 style="color: #b91c1c; margin: 0 0 6px; font-size: 1rem; text-align: center;">🔗 Ссылка на отмену брони</h3>
+      <p style="color: #7f1d1d; font-size: 0.8rem; margin: 0 0 12px; text-align: center; line-height: 1.4;">
+        Если планы изменятся, перейдите по этой ссылке, чтобы освободить место для других зрителей.<br>
+        <strong>Это НЕ входной билет, а ссылка на отмену.</strong>
+      </p>
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <button class="btn secondary" onclick="window.cancelBookingFromSuccess(window.currentCancelToken)" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;">
+          🗑 Отменить сейчас
+        </button>
+        <button class="btn secondary" onclick="window.copyCancelLink()" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;">
+          📋 Скопировать ссылку
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section"><h3>🎭 Танцующие тени</h3><p>Искусство движения, рассказанное без слов.</p></div>
+        <div class="footer-section"><h3>Контакты</h3><p>📍 ул. Маршала Конева, 10</p></div>
+        <div class="footer-section"><h3>Мы в соцсетях</h3><div class="social-links"><a href="https://vk.com/kurchat_dancing_shadows" class="social-link">VK</a><a href="https://t.me/kurchat_dancing_shadows" class="social-link">TG</a></div></div>
+      </div>
+      <div class="footer-bottom">
+        Все права защищены. © 2026
+        <span class="footer-separator">•</span>
+        <a href="/static/privacy.html" class="footer-link" target="_blank">Политика конфиденциальности</a>
+      </div>
+    </div>
+  </footer>
+  <script src="/static/script.js"></script>
+  <!-- 🔒 Модуль соответствия 152-ФЗ (cookies + политика) -->
+<script src="/static/compliance.js"></script>
+</body>
+</html>
